@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title>3d ball</title>
+  </head>
+  <body>
+    <canvas id="amiga3d"></canvas>
+    <script>
+      function amigaBallSetup() {
+        var options = {
+          canvasSize: 500,
+          canvasOffset: 10,
+          canvasTitle: "Amiga Ball",
+          backgroundColor: "gray",
+          followScroll: true,
+          destinationId: "amiga3d",
+          fps: 15
+        };
+
+        var canvas = document.getElementById(options.destinationId);
+        var ctx = canvas.getContext('2d');
+        var ball = new amigaBall(20);
+        var rotation = 0;
+        var distance = 0;
+
+        function Point3D() {
+          this.x = 0;
+          this.y = 0;
+          this.z = 0;
+        }
+
+        function amigaBall(radius) {
+          this.point = new Array();
+          this.color = "rgb(100, 0, 255)";
+          this.radius = radius;
+          this.numberOfVertexes = 0;
+          this.degMax = Math.PI * 2;
+          this.degPitch = this.degMax / 36;
+
+          for (alpha = 0; alpha <= this.degMax; alpha += this.degPitch) {
+            var p = this.point[this.numberOfVertexes] = new Point3D();
+            p.x = Math.cos(alpha) * this.radius;
+            p.y = 0;
+            p.z = Math.sin(alpha) * this.radius;
+            this.numberOfVertexes++;
+          }
+
+          for (var direction = 1; direction >= -1; direction -= 2) {
+            for (var beta = this.degPitch; beta < 1.445; beta += this.degPitch) {
+              var radius = Math.cos(beta) * this.radius;
+              var fixedY = Math.sin(beta) * this.radius * direction;
+              for (var alpha = 0; alpha < this.degMax; alpha += this.degPitch) {
+                var p = this.point[this.numberOfVertexes] = new Point3D();
+                p.x = Math.cos(alpha) * radius;
+                p.y = fixedY;
+                p.z = Math.sin(alpha) * radius;
+                this.numberOfVertexes++;
+              }
+            }
+          }
+        }
+
+        function rotateX(point, radians) {
+          var y = point.y;
+          point.y = (y * Math.cos(radians)) + (point.z * Math.sin(radians) * -1.0);
+          point.z = (y * Math.sin(radians)) + (point.z * Math.cos(radians));
+        }
+
+        function rotateY(point, radians) {
+          var x = point.x;
+          point.x = (x * Math.cos(radians)) + (point.z * Math.sin(radians) * -1.0);
+          point.z = (x * Math.sin(radians)) + (point.z * Math.cos(radians));
+        }
+
+        function rotateZ(point, radians) {
+          var x = point.x;
+          point.x = (x * Math.cos(radians)) + (point.z * Math.sin(radians) * -1.0);
+          point.z = (x * Math.sin(radians)) + (point.z * Math.cos(radians));
+        }
+
+        function projection(xy, z, xyOffset, zOffset, distance) {
+          return ((distance * xy) / (z - zOffset)) + xyOffset;
+        }
+
+        function drawPointWithGradient(ctx, x, y, size, color, gradient) {
+          var reflection = size / 4;
+          ctx.save();
+          ctx.translate(x, y);
+          var radgrad = ctx.createRadialGradient(-reflection, -reflection, reflection, 0, 0, size);
+          radgrad.addColorStop(0, '#FFFFFF');
+          radgrad.addColorStop(gradient, color);
+          radgrad.addColorStop(1, 'rgba(1, 159, 98, 0)');
+          ctx.fillStyle = radgrad;
+          ctx.fillRect(-size, -size, size * 2, size * 2);
+          ctx.restore();
+        }
+
+        function drawPoint(ctx, x, y, size, color) {
+          ctx.save();
+          ctx.beginPath();
+          ctx.fillStyle = color;
+          ctx.arc(x, y, size, 0, 2 * Math.PI, true);
+          ctx.fill();
+          ctx.restore();
+        }
+
+        function render() {
+          console.log("render");
+          canvas.width = canvas.height = options.canvasSize;
+          canvas.title = options.canvasTitle;
+          canvas.style.zIndex = 100;
+          canvas.style.cursor = "pointer";
+          canvas.style.left = canvas.style.top = options.canvasOffset + 'px';
+          canvas.style.backgroundColor = options.backgroundColor;
+          document.body.appendChild(canvas);
+          if (options.followScroll) {
+            canvas.style.position = "absolute";
+            var destinationY = positionY = options.canvasOffset;
+            window.addEventListener("scroll", function() {
+                destinationY = window.pageYOffset + options.canvasOffset;
+              });
+          }
+          var p = new Point3D();
+          ctx.save();
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+          ctx.globalCompositeOperation = 'lighter';
+
+          for (var i = 0; i < ball.numberOfVertexes; i++) {
+            //console.log(ball.point[0]);
+            p.x = ball.point[i].x;
+            p.y = ball.point[i].y;
+            p.z = ball.point[i].z;
+
+            rotateX(p, rotation);
+            rotateY(p, rotation);
+            rotateZ(p, rotation);
+            //console.info("test", p.x);
+
+            x = projection(p.x, p.z, canvas.width / 2.0, 100.0, distance);
+            y = projection(p.y, p.z, canvas.width / 2.0, 100.0, distance);
+
+            if (x >= 0 && x < canvas.width) {
+              if (y >= 0 && y < canvas.height) {
+                if (p.z < 0) {
+                  drawPoint(ctx, x, y, 4, "rgba(200, 200, 200, 0.6)");
+                } else {
+                  drawPointWithGradient(ctx, x, y, 10, "rgb(0, 200, 0)", 0.8);
+                }
+              }
+            }
+          }
+          ctx.restore();
+          ctx.fillStyle = "rgb(150, 150, 150)";
+          ctx.fillText("test", canvas.width - 90, canvas.height - 5);
+          rotation += Math.PI / 90.0;
+          if (distance < 1000) {
+            distance += 10;
+          }
+        }
+
+        setInterval(render, 1000 / 20);
+
+        console.log('Amiga ball initialized !');
+      }
+
+      amigaBallSetup();
+    </script>
+  </body>
+</html>
