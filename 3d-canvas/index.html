@@ -35,7 +35,7 @@
           this.radius = radius;
           this.numberOfVertexes = 0;
           this.degMax = Math.PI * 2;
-          this.degPitch = this.degMax / 36;
+          this.degPitch = this.degMax / 16;
 
           for (alpha = 0; alpha <= this.degMax; alpha += this.degPitch) {
             var p = this.point[this.numberOfVertexes] = new Point3D();
@@ -144,7 +144,7 @@
                 if (p.z < 0) {
                   drawPoint(ctx, x, y, 4, "rgba(200, 200, 200, 0.6)");
                 } else {
-                  drawPointWithGradient(ctx, x, y, 10, "rgb(0, 200, 0)", 0.8);
+                  drawPointWithGradient(ctx, x, y, 10, "rgb(200, 0, 0)", 0.8);
                 }
               }
             }
