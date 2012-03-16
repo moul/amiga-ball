@@ -27,6 +27,11 @@
           this.x = 0;
           this.y = 0;
           this.z = 0;
+          this.bx = 0;
+          this.by = 0;
+          this.bz = 0;
+          this.px = 0;
+          this.py = 0;
         }
 
         function amigaBall(radius) {
@@ -42,6 +47,9 @@
             p.x = Math.cos(alpha) * this.radius;
             p.y = 0;
             p.z = Math.sin(alpha) * this.radius;
+            p.bx = p.x;
+            p.by = p.y;
+            p.bz = p.z;
             this.numberOfVertexes++;
           }
 
@@ -54,33 +62,63 @@
                 p.x = Math.cos(alpha) * radius;
                 p.y = fixedY;
                 p.z = Math.sin(alpha) * radius;
+                p.bx = p.x;
+                p.by = p.y;
+                p.bz = p.z;
                 this.numberOfVertexes++;
               }
             }
           }
         }
 
-        function rotateX(point, radians) {
+        function rotatePoint(point, radians) {
+          var sinrad = Math.sin(radians);
+          var cosrad = Math.cos(radians);
+          var xyOffset = canvas.width / 2.0;
+
+          point.x = point.bx;
+          point.y = point.by;
+          point.z = point.bz;
+
+          // rotation
           var y = point.y;
-          point.y = (y * Math.cos(radians)) + (point.z * Math.sin(radians) * -1.0);
-          point.z = (y * Math.sin(radians)) + (point.z * Math.cos(radians));
-        }
+          point.y = y * cosrad - point.z * sinrad;
+          point.z = y * sinrad + point.z * cosrad;
 
-        function rotateY(point, radians) {
           var x = point.x;
-          point.x = (x * Math.cos(radians)) + (point.z * Math.sin(radians) * -1.0);
-          point.z = (x * Math.sin(radians)) + (point.z * Math.cos(radians));
+          point.x = x * cosrad - point.z * sinrad;
+          point.z = x * sinrad + point.z * cosrad;
+
+          x = point.x;
+          point.x = x * cosrad - point.z * sinrad;
+          point.z = x * sinrad + point.z * cosrad;
+
+          // projection
+          point.px = distance * point.x / (point.z - 100.0) + xyOffset;
+          point.py = distance * point.y / (point.z - 100.0) + xyOffset;
         }
 
-        function rotateZ(point, radians) {
-          var x = point.x;
-          point.x = (x * Math.cos(radians)) + (point.z * Math.sin(radians) * -1.0);
-          point.z = (x * Math.sin(radians)) + (point.z * Math.cos(radians));
-        }
+/*         function rotateX(point, radians) { */
+/*           var y = point.y; */
+/*           point.y = (y * Math.cos(radians)) + (point.z * Math.sin(radians) * -1.0); */
+/*           point.z = (y * Math.sin(radians)) + (point.z * Math.cos(radians)); */
+/*         } */
 
-        function projection(xy, z, xyOffset, zOffset, distance) {
-          return ((distance * xy) / (z - zOffset)) + xyOffset;
-        }
+/*         function rotateY(point, radians) { */
+/*           var x = point.x; */
+/*           point.x = (x * Math.cos(radians)) + (point.z * Math.sin(radians) * -1.0); */
+/*           point.z = (x * Math.sin(radians)) + (point.z * Math.cos(radians)); */
+/*         } */
+
+/*         function rotateZ(point, radians) { */
+/*           var x = point.x; */
+/*           point.x = (x * Math.cos(radians)) + (point.z * Math.sin(radians) * -1.0); */
+/*           point.z = (x * Math.sin(radians)) + (point.z * Math.cos(radians)); */
+/*         } */
+
+/*         function projection(xy, z, xyOffset, zOffset, distance) { */
+/*           return ((distance * xy) / (z - zOffset)) + xyOffset; */
+/*         } */
 
         function drawPointWithGradient(ctx, x, y, size, color, gradient) {
           var reflection = size / 4;
@@ -92,6 +130,37 @@
           radgrad.addColorStop(1, 'rgba(1, 159, 98, 0)');
           ctx.fillStyle = radgrad;
           ctx.fillRect(-size, -size, size * 2, size * 2);
+          ctx.restore();
+        }
+
+        function drawPolygon(ctx, points, size, color) {
+          ctx.save();
+          ctx.beginPath();
+          ctx.fillStyle = color;
+          var p = points[0];
+          //ctx.arc(x, y, size, 0, 2 * Math.PI, true);
+          //ctx.moveTo(pa.x, pa.y);
+
+          //console.dir(pa);
+
+          //var x = projection(pa.x, pa.z, canvas.width / 2.0, 100.0, distance);
+          //var y = projection(pa.y, pa.z, canvas.width / 2.0, 100.0, distance);
+
+          //console.dir(distance);
+          ctx.moveTo(p.px, p.py);
+          //ctx.translate(x + 150, y + 150);
+
+          for (var i = 1; i < points.length; i++) {
+            p = points[i];
+            //console.dir(pb);
+
+            ctx.lineTo(p.px, p.py);
+            //ctx.lineTo(pb.x, pb.y);
+          }
+
+          ctx.closePath();
+          ctx.stroke();
+          ctx.fill();
           ctx.restore();
         }
 
@@ -120,45 +189,71 @@
                 destinationY = window.pageYOffset + options.canvasOffset;
               });
           }
-          var p = new Point3D();
+          //var p = new Point3D();
           ctx.save();
           ctx.clearRect(0, 0, canvas.width, canvas.height);
           ctx.globalCompositeOperation = 'lighter';
+          //ctx.globalCompositeOperation = 'darker';
 
           for (var i = 0; i < ball.numberOfVertexes; i++) {
             //console.log(ball.point[0]);
-            p.x = ball.point[i].x;
-            p.y = ball.point[i].y;
-            p.z = ball.point[i].z;
+            var p = ball.point[i];
+            //p.x = ball.point[i].x;
+            //p.y = ball.point[i].y;
+            //p.z = ball.point[i].z;
 
-            rotateX(p, rotation);
-            rotateY(p, rotation);
-            rotateZ(p, rotation);
+            rotatePoint(p, rotation);
+
+            //rotateX(p, rotation);
+            //rotateY(p, rotation);
+            //rotateZ(p, rotation);
             //console.info("test", p.x);
 
-            x = projection(p.x, p.z, canvas.width / 2.0, 100.0, distance);
-            y = projection(p.y, p.z, canvas.width / 2.0, 100.0, distance);
+            //x = projection(p.x, p.z, canvas.width / 2.0, 100.0, distance);
+            //y = projection(p.y, p.z, canvas.width / 2.0, 100.0, distance);
+          }
 
-            if (x >= 0 && x < canvas.width) {
-              if (y >= 0 && y < canvas.height) {
+          for (var i = 0; i < ball.numberOfVertexes; i++) {
+            var p = ball.point[i];
+            if (p.px >= 0 && p.px < canvas.width) {
+              if (p.py >= 0 && p.py < canvas.height) {
                 if (p.z < 0) {
-                  drawPoint(ctx, x, y, 4, "rgba(200, 200, 200, 0.6)");
-                } else {
-                  drawPointWithGradient(ctx, x, y, 10, "rgb(200, 0, 0)", 0.8);
+                  drawPoint(ctx, p.px, p.py, 10, "rgba(200, 200, 200, 0.6)");
                 }
               }
             }
           }
+
+          //drawPolygon(ctx, [ball.point[42], ball.point[43], ball.point[20], ball.point[50], ball.point[72]], 10, "rgb(250, 0, 250)", 0.8);
+
+          alert(42);
+          for (var i = 0; i < ball.numberOfVertexes; i++) {
+            var p = ball.point[i];
+            if (p.px >= 0 && p.px < canvas.width) {
+              if (p.py >= 0 && p.py < canvas.height) {
+                if (p.z >= 0) {
+                  drawPointWithGradient(ctx, p.px, p.py, 12, "rgb(200, 0, 0)", 0.8);
+                }
+              }
+            }
+          }
+
+
           ctx.restore();
           ctx.fillStyle = "rgb(150, 150, 150)";
           ctx.fillText("test", canvas.width - 90, canvas.height - 5);
-          rotation += Math.PI / 90.0;
+
+          //console.log(ball.point[42]);
+
+
+
+          rotation += (Math.PI / 90.0) * 1.5;
           if (distance < 1000) {
-            distance += 10;
+            distance += 30;
           }
         }
 
-        setInterval(render, 1000 / 30);
+        setInterval(render, 1000 / 15);
 
         console.log('Amiga ball initialized !');
       }
