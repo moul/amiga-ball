@@ -32,6 +32,8 @@
           this.bz = 0;
           this.px = 0;
           this.py = 0;
+          this.row = 0;
+          this.column = 0;
           this.title = 'bla';
         }
 
@@ -43,6 +45,7 @@
           this.degMax = Math.PI * 2;
           this.degPitch = this.degMax / 16;
 
+          var column = 0;
           for (alpha = 0; alpha <= this.degMax; alpha += this.degPitch) {
             var p = this.point[this.numberOfVertexes] = new Point3D();
             p.x = Math.cos(alpha) * this.radius;
@@ -51,13 +54,18 @@
             p.bx = p.x;
             p.by = p.y;
             p.bz = p.z;
+            p.row = 0;
+            p.column = column;
+            column++;
             this.numberOfVertexes++;
           }
 
           for (var direction = 1; direction >= -1; direction -= 2) {
-            for (var beta = this.degPitch; beta < 1.445; beta += this.degPitch) {
+            var row = direction;
+            for (var beta = this.degPitch; beta <= Math.PI / 2 + 0.001; beta += this.degPitch) {
               var radius = Math.cos(beta) * this.radius;
               var fixedY = Math.sin(beta) * this.radius * direction;
+              var column = 0;
               for (var alpha = 0; alpha < this.degMax; alpha += this.degPitch) {
                 var p = this.point[this.numberOfVertexes] = new Point3D();
                 p.x = Math.cos(alpha) * radius;
@@ -66,10 +74,26 @@
                 p.bx = p.x;
                 p.by = p.y;
                 p.bz = p.z;
+                p.row = row;
+                p.column = column;
                 this.numberOfVertexes++;
+                column++;
               }
+              row += direction;
             }
           }
+
+          this.grid = {};
+          for (var i = 0; i < this.numberOfVertexes; i++) {
+            var p = this.point[i];
+            if (typeof(this.grid[p.row]) == 'undefined') {
+              this.grid[p.row] = {};
+            }
+            this.grid[p.row][p.column] = p;
+          }
+          this.columns = this.grid[0].length;
+          this.rows = this.grid.length;
+          //console.log(this.grid);
         }
 
         function rotatePoint(point, radians) {
@@ -133,7 +157,8 @@
           ctx.fillRect(-size, -size, size * 2, size * 2);
           ctx.restore();
           ctx.fillStyle = "rgb(0, 0, 0)";
-          ctx.fillText(p.title, p.px, p.py);
+          ctx.font = "13pt Arial";
+          ctx.fillText(p.row + ':' + p.column, p.px, p.py);
           ctx.restore();
         }
 
