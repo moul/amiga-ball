@@ -20,6 +20,7 @@
         var canvas = document.getElementById(options.destinationId);
         var ctx = canvas.getContext('2d');
         var ball = new amigaBall(20);
+        //console.log(ball);
         var rotation = 0;
         var distance = 0;
 
@@ -83,16 +84,22 @@
             }
           }
 
+          this.columns = 0;
+          this.rows = 0;
           this.grid = {};
           for (var i = 0; i < this.numberOfVertexes; i++) {
             var p = this.point[i];
             if (typeof(this.grid[p.row]) == 'undefined') {
+              this.rows++;
               this.grid[p.row] = {};
             }
+            this.columns = Math.max(this.columns, p.column);
             this.grid[p.row][p.column] = p;
           }
-          this.columns = this.grid[0].length;
-          this.rows = this.grid.length;
+          this.columns++;
+          this.rowmax = Math.floor(this.rows / 2);
+          this.rowmin = -this.rowmax;
+          //console.log(this.rowmin);
           //console.log(this.grid);
         }
 
@@ -191,7 +198,7 @@
         }
 
         function render() {
-          console.log("render");
+          //console.log("render");
           canvas.width = canvas.height = options.canvasSize;
           canvas.title = options.canvasTitle;
           canvas.style.zIndex = 100;
@@ -243,7 +250,20 @@
             }
           }
 
-          drawPolygon(ctx, [ball.point[42], ball.point[43], ball.point[20], ball.point[50], ball.point[72]], 10, "rgb(250, 0, 250)", 0.8);
+          //thisconsole.log(ball.rows);
+          for (var row = ball.rowmin; row < ball.rowmax; row++) {
+            var oddeven = Math.abs(row % 2);
+            for (var col = 0; col < ball.columns; col++) {
+              var color = (oddeven ? 'rgb(250, 0, 0)' : 'rgb(250, 250, 250)');
+              oddeven = 1 - oddeven;
+              drawPolygon(ctx, [
+                                ball.grid[row][col],
+                                ball.grid[row][(col + 1) % ball.columns],
+                                ball.grid[row + 1][(col + 1) % ball.columns],
+                                ball.grid[row + 1][col]
+                                ], 10, color, 0.8);
+            }
+          }
 
           //alert(42);
           for (var i = 0; i < ball.numberOfVertexes; i++) {
@@ -273,7 +293,7 @@
           }
         }
 
-        setInterval(render, 1000 / 15);
+        setInterval(render, 1000 / 30);
 
         console.log('Amiga ball initialized !');
       }
