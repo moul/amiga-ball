@@ -17,7 +17,8 @@
           showPoints: 0,
           showText: 0,
           fillPolygons: 1,
-          fps: 30
+          fps: 30,
+          showShadow: 1
         };
 
         var canvas = document.getElementById(options.destinationId);
@@ -132,28 +133,6 @@
           point.py = distance * point.y / (point.z - 100.0) + xyOffset;
         }
 
-/*         function rotateX(point, radians) { */
-/*           var y = point.y; */
-/*           point.y = (y * Math.cos(radians)) + (point.z * Math.sin(radians) * -1.0); */
-/*           point.z = (y * Math.sin(radians)) + (point.z * Math.cos(radians)); */
-/*         } */
-
-/*         function rotateY(point, radians) { */
-/*           var x = point.x; */
-/*           point.x = (x * Math.cos(radians)) + (point.z * Math.sin(radians) * -1.0); */
-/*           point.z = (x * Math.sin(radians)) + (point.z * Math.cos(radians)); */
-/*         } */
-
-/*         function rotateZ(point, radians) { */
-/*           var x = point.x; */
-/*           point.x = (x * Math.cos(radians)) + (point.z * Math.sin(radians) * -1.0); */
-/*           point.z = (x * Math.sin(radians)) + (point.z * Math.cos(radians)); */
-/*         } */
-
-/*         function projection(xy, z, xyOffset, zOffset, distance) { */
-/*           return ((distance * xy) / (z - zOffset)) + xyOffset; */
-/*         } */
-
         function drawPointWithGradient(ctx, p, size, color, gradient) {
           var reflection = size / 4;
           ctx.save();
@@ -201,13 +180,14 @@
           ctx.arc(p.px, p.py, size, 0, 2 * Math.PI, true);
           ctx.fill();
           ctx.restore();
-          //ctx.fillStyle = "rgb(0, 0, 0)";
-          //ctx.fillText(p.title, p.px, p.py);
-          //ctx.restore();
+          if (false) {
+            ctx.fillStyle = "rgb(0, 0, 0)";
+            ctx.fillText(p.title, p.px, p.py);
+            ctx.restore();
+          }
         }
 
         function render() {
-          //console.log("render");
           canvas.width = canvas.height = options.canvasSize;
           canvas.title = options.canvasTitle;
           canvas.style.zIndex = 100;
@@ -222,29 +202,26 @@
                 destinationY = window.pageYOffset + options.canvasOffset;
               });
           }
-          //var p = new Point3D();
           ctx.save();
           ctx.clearRect(0, 0, canvas.width, canvas.height);
           ctx.globalCompositeOperation = 'lighter';
           //ctx.globalCompositeOperation = 'darker';
 
           for (var i = 0; i < ball.numberOfVertexes; i++) {
-            //console.log(ball.point[0]);
-            var p = ball.point[i];
-            //p.x = ball.point[i].x;
-            //p.y = ball.point[i].y;
-            //p.z = ball.point[i].z;
-
-            rotatePoint(p, rotation);
-
-            //rotateX(p, rotation);
-            //rotateY(p, rotation);
-            //rotateZ(p, rotation);
-            //console.info("test", p.x);
-
-            //x = projection(p.x, p.z, canvas.width / 2.0, 100.0, distance);
-            //y = projection(p.y, p.z, canvas.width / 2.0, 100.0, distance);
+            rotatePoint(ball.point[i], rotation);
           }
+
+
+          if (options.showShadow) {
+            ctx.save();
+            ctx.beginPath();
+            ctx.fillStyle = 'rgb(100, 100, 100)';
+            ctx.arc(canvas.width / 2 + distance / 25, canvas.width / 2 + distance / 25, distance / 5, 0, 2 * Math.PI, true);
+            ctx.fill();
+            ctx.restore();
+          }
+
+            ctx.save();
 
 
           if (options.showPoints) {
@@ -261,18 +238,20 @@
           }
 
           //thisconsole.log(ball.rows);
-          for (var row = ball.rowmin; row < ball.rowmax; row++) {
-            var oddeven = Math.abs(row % 2);
-            for (var col = 0; col < ball.columns; col++) {
-              var color = (oddeven ? 'rgb(250, 0, 0)' : 'rgb(250, 250, 250)');
-              oddeven = 1 - oddeven;
-              if (ball.grid[row][col].z > 0) {
-                drawPolygon(ctx, [
-                                  ball.grid[row][col],
-                                  ball.grid[row][(col + 1) % ball.columns],
-                                  ball.grid[row + 1][(col + 1) % ball.columns],
-                                  ball.grid[row + 1][col]
-                                  ], 10, color, 0.8);
+          if (1) {
+            for (var row = ball.rowmin; row < ball.rowmax; row++) {
+              var oddeven = Math.abs(row % 2);
+              for (var col = 0; col < ball.columns; col++) {
+                var color = (oddeven ? 'rgb(250, 0, 0)' : 'rgb(250, 250, 250)');
+                oddeven = 1 - oddeven;
+                if (ball.grid[row][col].z > 0) {
+                  drawPolygon(ctx, [
+                                    ball.grid[row][col],
+                                    ball.grid[row][(col + 1) % ball.columns],
+                                    ball.grid[row + 1][(col + 1) % ball.columns],
+                                    ball.grid[row + 1][col]
+                                    ], 10, color, 0.8);
+                }
               }
             }
           }
@@ -302,7 +281,7 @@
 
           rotation += (Math.PI / 90.0) * options.rotationSpeed;
           if (distance < 1000) {
-            distance += 100;
+            distance += 20;
           }
         }
 
@@ -321,6 +300,7 @@
     <body onload="amigaBallSetup();">
     stroke<input type="checkbox" onChange="javascript:options.stroke=1-options.stroke;" /> |
     fill<input type="checkbox" checked onChange="javascript:options.fillPolygons=1-options.fillPolygons;" /> |
+    shadow<input type="checkbox" checked onChange="javascript:options.showShadow=1-options.showShadow;" /> |
     points<input type="checkbox" onChange="javascript:options.showPoints=1-options.showPoints;" /> |
     text<input type="checkbox" onChange="javascript:options.showText=1-options.showText;" /> |
     fps<input type="text" onChange="javascript:changeFps(this.value);" value="30" size="2" /> |
