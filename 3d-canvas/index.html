@@ -18,7 +18,8 @@
           showText: 0,
           fillPolygons: 1,
           fps: 30,
-          showShadow: 1
+          showShadow: 1,
+          zLimit: 0
         };
 
         var canvas = document.getElementById(options.destinationId);
@@ -134,17 +135,20 @@
         }
 
         function drawPointWithGradient(ctx, p, size, color, gradient) {
-          var reflection = size / 4;
-          ctx.save();
-          ctx.translate(p.px, p.py);
-          var radgrad = ctx.createRadialGradient(-reflection, -reflection, reflection, 0, 0, size);
-          radgrad.addColorStop(0, '#FFFFFF');
-          radgrad.addColorStop(gradient, color);
-          radgrad.addColorStop(1, 'rgba(1, 159, 98, 0)');
-          ctx.fillStyle = radgrad;
-          ctx.fillRect(-size, -size, size * 2, size * 2);
-          ctx.restore();
+          if (options.showPoints) {
+            var reflection = size / 4;
+            ctx.save();
+            ctx.translate(p.px, p.py);
+            var radgrad = ctx.createRadialGradient(-reflection, -reflection, reflection, 0, 0, size);
+            radgrad.addColorStop(0, '#FFFFFF');
+            radgrad.addColorStop(gradient, color);
+            radgrad.addColorStop(1, 'rgba(1, 159, 98, 0)');
+            ctx.fillStyle = radgrad;
+            ctx.fillRect(-size, -size, size * 2, size * 2);
+            ctx.restore();
+          }
           if (options.showText) {
+            ctx.save();
             ctx.fillStyle = "rgb(0, 0, 0)";
             ctx.font = "13pt Arial";
             ctx.fillText(p.row + ':' + p.column, p.px, p.py);
@@ -174,15 +178,17 @@
         }
 
         function drawPoint(ctx, p, size, color) {
-          ctx.save();
-          ctx.beginPath();
-          ctx.fillStyle = color;
-          ctx.arc(p.px, p.py, size, 0, 2 * Math.PI, true);
-          ctx.fill();
-          ctx.restore();
-          if (false) {
+          if (options.showPoints) {
+            ctx.save();
+            ctx.beginPath();
+            ctx.fillStyle = color;
+            ctx.arc(p.px, p.py, size, 0, 2 * Math.PI, true);
+            ctx.fill();
+            ctx.restore();
+          }
+          if (options.showText) {
             ctx.fillStyle = "rgb(0, 0, 0)";
-            ctx.fillText(p.title, p.px, p.py);
+            ctx.fillText(p.row + ':' + p.column, p.px, p.py);
             ctx.restore();
           }
         }
@@ -224,12 +230,12 @@
             ctx.save();
 
 
-          if (options.showPoints) {
+          if (options.showPoints || options.showText) {
             for (var i = 0; i < ball.numberOfVertexes; i++) {
               var p = ball.point[i];
               if (p.px >= 0 && p.px < canvas.width) {
                 if (p.py >= 0 && p.py < canvas.height) {
-                  if (p.z < 0) {
+                  if (p.z < options.zLimit) {
                     drawPoint(ctx, p, 3, "rgba(200, 200, 200, 0.6)");
                   }
                 }
@@ -244,24 +250,29 @@
               for (var col = 0; col < ball.columns; col++) {
                 var color = (oddeven ? 'rgb(250, 0, 0)' : 'rgb(250, 250, 250)');
                 oddeven = 1 - oddeven;
-                if (ball.grid[row][col].z > 0) {
-                  drawPolygon(ctx, [
-                                    ball.grid[row][col],
-                                    ball.grid[row][(col + 1) % ball.columns],
-                                    ball.grid[row + 1][(col + 1) % ball.columns],
-                                    ball.grid[row + 1][col]
-                                    ], 10, color, 0.8);
+                var points = [
+                              ball.grid[row][col],
+                              ball.grid[row][(col + 1) % ball.columns],
+                              ball.grid[row + 1][(col + 1) % ball.columns],
+                              ball.grid[row + 1][col]
+                              ];
+                var visiblePoints = 0;
+                for (var i = 0; i < 4; i++) {
+                  visiblePoints += (points[i].z > options.zLimit);
+                }
+                if (visiblePoints > 3) {
+                  drawPolygon(ctx, points, 10, color, 0.8);
                 }
               }
             }
           }
 
-          if (options.showPoints) {
+          if (options.showPoints || options.showText) {
             for (var i = 0; i < ball.numberOfVertexes; i++) {
               var p = ball.point[i];
               if (p.px >= 0 && p.px < canvas.width) {
                 if (p.py >= 0 && p.py < canvas.height) {
-                  if (p.z >= 0) {
+                  if (p.z >= options.zLimit) {
                     drawPointWithGradient(ctx, p, 5, "rgb(200, 0, 0)", 0.8);
                   }
                 }
@@ -304,6 +315,7 @@
     points<input type="checkbox" onChange="javascript:options.showPoints=1-options.showPoints;" /> |
     text<input type="checkbox" onChange="javascript:options.showText=1-options.showText;" /> |
     fps<input type="text" onChange="javascript:changeFps(this.value);" value="30" size="2" /> |
+    zLimit<input type="text" onChange="javascript:options.zLimit=this.value;" value="0" size="2" /> |
     rotation<input type="text" onChange="javascript:options.rotationSpeed=this.value;" value="0.2" size="3" /> |
     <canvas id="amiga3d"></canvas>
   </body>
