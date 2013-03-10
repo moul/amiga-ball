@@ -15,3 +15,8 @@ Inspiration
 * http://www.jimbrooks.org/web/opengl/boing/
 * http://cyberpingui.free.fr/pcintros.htm
 * http://js1k.com/2010-first/demo/720
+
+Contributors
+------------
+
+- [Bemmu Sepponen](https://github.com/Bemmu)
