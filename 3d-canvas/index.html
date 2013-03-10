@@ -3,6 +3,11 @@
   <head>
     <title>3d ball</title>
     <script>
+    // Don't crash if user doesn't have devtools
+    if (typeof(window.console) === 'undefined') {
+      window.console = {log: function () { }};
+    }
+
    var options, interval, changeFps;
       function amigaBallSetup() {
         options = {
@@ -13,12 +18,12 @@
           followScroll: true,
           destinationId: "amiga3d",
           rotationSpeed: 0.2,
-          stroke: 0,
-          showPoints: 0,
-          showText: 0,
-          fillPolygons: 1,
+          stroke: false,
+          showPoints: false,
+          showText: false,
+          fillPolygons: true,
           fps: 30,
-          showShadow: 1,
+          showShadow: true,
           zLimit: 0
         };
 
@@ -40,19 +45,25 @@
           this.py = 0;
           this.row = 0;
           this.column = 0;
+
+          this.project = function () {
+            var xyOffset = canvas.width / 2.0;
+            this.px = distance * this.x / (this.z - 100.0) + xyOffset;
+            this.py = distance * this.y / (this.z - 100.0) + xyOffset;
+          }
         }
 
         function amigaBall(radius) {
-          this.point = new Array();
+          this.point = [];
           this.color = "rgb(100, 0, 255)";
           this.radius = radius;
-          this.numberOfVertexes = 0;
+          this.numberOfVertices = 0;
           this.degMax = Math.PI * 2;
           this.degPitch = this.degMax / 16;
 
           var column = 0;
           for (alpha = 0; alpha <= this.degMax; alpha += this.degPitch) {
-            var p = this.point[this.numberOfVertexes] = new Point3D();
+            var p = this.point[this.numberOfVertices] = new Point3D();
             p.x = Math.cos(alpha) * this.radius;
             p.y = 0;
             p.z = Math.sin(alpha) * this.radius;
@@ -62,7 +73,7 @@
             p.row = 0;
             p.column = column;
             column++;
-            this.numberOfVertexes++;
+            this.numberOfVertices++;
           }
 
           for (var direction = 1; direction >= -1; direction -= 2) {
@@ -72,7 +83,7 @@
               var fixedY = Math.sin(beta) * this.radius * direction;
               var column = 0;
               for (var alpha = 0; alpha < this.degMax; alpha += this.degPitch) {
-                var p = this.point[this.numberOfVertexes] = new Point3D();
+                var p = this.point[this.numberOfVertices] = new Point3D();
                 p.x = Math.cos(alpha) * radius;
                 p.y = fixedY;
                 p.z = Math.sin(alpha) * radius;
@@ -81,7 +92,7 @@
                 p.bz = p.z;
                 p.row = row;
                 p.column = column;
-                this.numberOfVertexes++;
+                this.numberOfVertices++;
                 column++;
               }
               row += direction;
@@ -91,7 +102,7 @@
           this.columns = 0;
           this.rows = 0;
           this.grid = {};
-          for (var i = 0; i < this.numberOfVertexes; i++) {
+          for (var i = 0; i < this.numberOfVertices; i++) {
             var p = this.point[i];
             if (typeof(this.grid[p.row]) == 'undefined') {
               this.rows++;
@@ -110,7 +121,6 @@
         function rotatePoint(point, radians) {
           var sinrad = Math.sin(radians);
           var cosrad = Math.cos(radians);
-          var xyOffset = canvas.width / 2.0;
 
           point.x = point.bx;
           point.y = point.by;
@@ -129,12 +139,14 @@
           point.x = x * cosrad - point.z * sinrad;
           point.z = x * sinrad + point.z * cosrad;
 
-          // projection
-          point.px = distance * point.x / (point.z - 100.0) + xyOffset;
-          point.py = distance * point.y / (point.z - 100.0) + xyOffset;
+          point.project();
         }
 
         function drawPointWithGradient(ctx, p, size, color, gradient) {
+          // Check bounds
+          if (p.px < 0 || p.px >= canvas.width) return;
+          if (p.py < 0 || p.py >= canvas.height) return;
+
           if (options.showPoints) {
             var reflection = size / 4;
             ctx.save();
@@ -213,10 +225,9 @@
           ctx.globalCompositeOperation = 'lighter';
           //ctx.globalCompositeOperation = 'darker';
 
-          for (var i = 0; i < ball.numberOfVertexes; i++) {
+          for (var i = 0; i < ball.numberOfVertices; i++) {
             rotatePoint(ball.point[i], rotation);
           }
-
 
           if (options.showShadow) {
             ctx.save();
@@ -229,9 +240,8 @@
 
             ctx.save();
 
-
-          if (options.showPoints || options.showText) {
-            for (var i = 0; i < ball.numberOfVertexes; i++) {
+/*          if (options.showPoints || options.showText) {
+            for (var i = 0; i < ball.numberOfVertices; i++) {
               var p = ball.point[i];
               if (p.px >= 0 && p.px < canvas.width) {
                 if (p.py >= 0 && p.py < canvas.height) {
@@ -241,7 +251,7 @@
                 }
               }
             }
-          }
+          }*/
 
           //thisconsole.log(ball.rows);
           if (1) {
@@ -256,11 +266,36 @@
                               ball.grid[row + 1][(col + 1) % ball.columns],
                               ball.grid[row + 1][col]
                               ];
-                var visiblePoints = 0;
+
+                // Backface culling (1) 
+                // Take normal as vector from center of sphere to center of polygon.
+                var avg = new Point3D();
                 for (var i = 0; i < 4; i++) {
-                  visiblePoints += (points[i].z > options.zLimit);
+                  avg.x += points[i].x; // bx is x before rotation
+                  avg.y += points[i].y;
+                  avg.z += points[i].z;
                 }
-                if (visiblePoints > 3) {
+                avg.x /= 4;
+                avg.y /= 4;
+                avg.z /= 4;
+                var magnitude = Math.sqrt(avg.x*avg.x + avg.y*avg.y + avg.z*avg.z);
+                var normal = {
+                  x: avg.x / magnitude,
+                  y: avg.y / magnitude,
+                  z: avg.z / magnitude
+                };
+
+                // Backface culling (2)
+                // Check normal is facing away from screen by taking dot product
+                // between normal and polygon->view point vector.
+                var viewVector = {
+                  x: 0-avg.x,
+                  y: 0-avg.y,
+                  z: 0-(avg.z - 100)
+                };
+                var dotProduct = viewVector.x * normal.x + viewVector.y * normal.y + viewVector.z * normal.z;
+
+                if (dotProduct >= 0) {
                   drawPolygon(ctx, points, 10, color, 0.8);
                 }
               }
@@ -268,19 +303,13 @@
           }
 
           if (options.showPoints || options.showText) {
-            for (var i = 0; i < ball.numberOfVertexes; i++) {
+            for (var i = 0; i < ball.numberOfVertices; i++) {
               var p = ball.point[i];
-              if (p.px >= 0 && p.px < canvas.width) {
-                if (p.py >= 0 && p.py < canvas.height) {
-                  if (p.z >= options.zLimit) {
-                    drawPointWithGradient(ctx, p, 5, "rgb(200, 0, 0)", 0.8);
-                  }
-                }
+              if (p.z >= options.zLimit) {
+                drawPointWithGradient(ctx, p, 5, "rgb(200, 0, 0)", 0.8);
               }
             }
           }
-
-
 
           ctx.restore();
           //ctx.fillStyle = "rgb(0, 0, 0)";
@@ -288,12 +317,8 @@
 
           //console.log(ball.point[42]);
 
-
-
           rotation += (Math.PI / 90.0) * options.rotationSpeed;
-          if (distance < 1000) {
-            distance += 20;
-          }
+          distance = distance * 0.9 + 1000*0.1;
         }
 
         interval = setInterval(render, 1000 / options.fps);
@@ -309,14 +334,14 @@
     </script>
   </head>
     <body onload="amigaBallSetup();">
-    stroke<input type="checkbox" onChange="javascript:options.stroke=1-options.stroke;" /> |
-    fill<input type="checkbox" checked onChange="javascript:options.fillPolygons=1-options.fillPolygons;" /> |
-    shadow<input type="checkbox" checked onChange="javascript:options.showShadow=1-options.showShadow;" /> |
-    points<input type="checkbox" onChange="javascript:options.showPoints=1-options.showPoints;" /> |
-    text<input type="checkbox" onChange="javascript:options.showText=1-options.showText;" /> |
-    fps<input type="text" onChange="javascript:changeFps(this.value);" value="30" size="2" /> |
-    zLimit<input type="text" onChange="javascript:options.zLimit=this.value;" value="0" size="2" /> |
-    rotation<input type="text" onChange="javascript:options.rotationSpeed=this.value;" value="0.2" size="3" /> |
+    <input type="checkbox" onChange="options.stroke=!options.stroke;" />stroke 
+    <input type="checkbox" checked onChange="options.fillPolygons=!options.fillPolygons;" />fill 
+    <input type="checkbox" checked onChange="options.showShadow=!options.showShadow;" />shadow 
+    <input type="checkbox" onChange="options.showPoints=!options.showPoints;" />points
+    <input type="checkbox" onChange="options.showText=!options.showText;" />text 
+    <input type="text" onChange="changeFps(this.value);" value="30" size="2" />fps 
+    <input type="text" onChange="options.zLimit=this.value;" value="0" size="2" />zLimit 
+    <input type="text" onChange="options.rotationSpeed=this.value;" value="0.2" size="3" />rotation 
     <canvas id="amiga3d"></canvas>
   </body>
 </html>
