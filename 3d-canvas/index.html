@@ -257,20 +257,22 @@
             avg.x /= 4;
             avg.y /= 4;
             avg.z /= 4;
-            var magnitude = Math.sqrt(avg.x*avg.x + avg.y*avg.y + avg.z*avg.z);
+
+            // It is not necessary to normalize this, because the dot product
+            // sign would not change.
             var normal = {
-              x: avg.x / magnitude,
-              y: avg.y / magnitude,
-              z: avg.z / magnitude
+              x: avg.x,
+              y: avg.y,
+              z: avg.z
             };
 
             // Backface culling (2)
             // Check normal is facing away from screen by taking dot product
             // between normal and polygon->view point vector.
             var viewVector = {
-              x: 0-avg.x,
-              y: 0-avg.y,
-              z: 0-(avg.z - 100)
+              x: -avg.x,
+              y: -avg.y,
+              z: 100 - avg.z
             };
             var dotProduct = viewVector.x * normal.x + viewVector.y * normal.y + viewVector.z * normal.z;
 
