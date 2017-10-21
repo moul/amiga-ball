@@ -8,7 +8,7 @@
       window.console = {log: function () { }};
     }
 
-    var options, interval, changeFps;
+    var options;
     function amigaBallSetup() {
       options = {
         canvasSize: 500,
@@ -292,14 +292,10 @@
         ctx.restore();
         rotation += (Math.PI / 90.0) * options.rotationSpeed;
         distance = distance * 0.9 + 1000*0.1;
+        requestAnimationFrame(render)
       }
 
-      interval = setInterval(render, 1000 / options.fps);
-      changeFps = function(fps) {
-        options.fps = fps;
-        clearInterval(interval);
-        interval = setInterval(render, 1000 / options.fps);
-      }
+      render()
       console.log('Amiga ball initialized !');
     }
 
