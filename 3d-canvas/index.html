@@ -4,7 +4,7 @@
     <title>3D Ball</title>
     <script>
     // Don't crash if user doesn't have devtools
-    if (typeof(window.console) === 'undefined') {
+    if (window.console === undefined) {
       window.console = {log: function () { }};
     }
 
