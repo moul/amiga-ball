@@ -234,10 +234,8 @@
         ctx.save();
 
         for (var row = ball.rowmin; row < ball.rowmax; row++) {
-          var oddeven = Math.abs(row % 2);
           for (var col = 0; col < ball.columns; col++) {
-            var color = (oddeven ? 'rgb(250, 0, 0)' : 'rgb(250, 250, 250)');
-            oddeven = 1 - oddeven;
+            var color = ((col + row) % 2 ? 'rgb(250, 0, 0)' : 'rgb(250, 250, 250)');
             var points = [
                           ball.grid[row][col],
                           ball.grid[row][(col + 1) % ball.columns],
@@ -249,13 +247,10 @@
             // Take normal as vector from center of sphere to center of polygon.
             var avg = new Point3D();
             for (var i = 0; i < 4; i++) {
-              avg.x += points[i].x; // bx is x before rotation
-              avg.y += points[i].y;
-              avg.z += points[i].z;
+              avg.x += 0.25 * points[i].x; 
+              avg.y += 0.25 * points[i].y;
+              avg.z += 0.25 * points[i].z;
             }
-            avg.x /= 4;
-            avg.y /= 4;
-            avg.z /= 4;
 
             // It is not necessary to normalize this, because the dot product
             // sign would not change.
