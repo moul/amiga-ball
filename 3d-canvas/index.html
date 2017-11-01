@@ -102,7 +102,7 @@
         this.grid = {};
         for (var i = 0; i < this.numberOfVertices; i++) {
           var p = this.point[i];
-          if (typeof(this.grid[p.row]) == 'undefined') {
+          if (this.grid[p.row] == undefined) {
             this.rows++;
             this.grid[p.row] = {};
           }
@@ -166,6 +166,7 @@
       function drawPolygon(ctx, points, size, color) {
         ctx.save();
         ctx.beginPath();
+        // ctx.globalAlpha = 0.5; // Turn this on to make it translucent.
         ctx.fillStyle = color;
         var p = points[0];
         ctx.moveTo(p.px, p.py);
