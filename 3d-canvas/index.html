@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang=en>
+<html lang="en">
   <head>
     <title>3D Ball</title>
     <script>
@@ -215,9 +215,7 @@
               destinationY = window.pageYOffset + options.canvasOffset;
             });
         }
-        ctx.save();
         ctx.clearRect(0, 0, canvas.width, canvas.height);
-        ctx.globalCompositeOperation = 'lighter';
 
         for (var i = 0; i < ball.numberOfVertices; i++) {
           rotatePoint(ball.point[i], rotation);
@@ -270,6 +268,10 @@
             // Check normal is facing away from screen by taking dot product
             // between normal and polygon->view point vector.
             var viewVector = {
+              // x: 0,
+              // y: 0,
+              // z: 1   Why won't this work?
+
               x: -avg.x,
               y: -avg.y,
               z: 100 - avg.z
@@ -303,15 +305,15 @@
 
     </script>
   </head>
-  <body onload="amigaBallSetup();">
-    <input type=checkbox onChange="options.stroke=!options.stroke;">stroke 
-    <input type=checkbox checked onChange="options.fillPolygons=!options.fillPolygons;">fill 
-    <input type=checkbox checked onChange="options.showShadow=!options.showShadow;">shadow 
-    <input type=checkbox onChange="options.showPoints=!options.showPoints;">points
-    <input type=checkbox onChange="options.showText=!options.showText;">text 
-    <input type=text onChange="changeFps(this.value);" value=30 size=2>fps 
-    <input type=text onChange="options.zLimit=this.value;" value=0 size=2>zLimit 
-    <input type=text onChange="options.rotationSpeed=this.value;" value=0.2 size=3>rotation 
+  <body onload="amigaBallSetup()">
+    <input type="checkbox" onChange="options.stroke=!options.stroke;">stroke 
+    <input type="checkbox" checked onChange="options.fillPolygons=!options.fillPolygons;">fill 
+    <input type="checkbox" checked onChange="options.showShadow=!options.showShadow;">shadow 
+    <input type="checkbox" onChange="options.showPoints=!options.showPoints;">points
+    <input type="checkbox" onChange="options.showText=!options.showText;">text 
+    <input type="text" onChange="changeFps(this.value);" value=30 size=2>fps 
+    <input type="text" onChange="options.zLimit=this.value;" value=0 size=2>zLimit 
+    <input type="text" onChange="options.rotationSpeed=this.value;" value=0.2 size=3>rotation 
     <canvas></canvas>
   </body>
 </html>
