@@ -1,6 +1,8 @@
 AMIGAAaaA
 =========
 
+[![GuardRails badge](https://badges.production.guardrails.io/moul/amiga-ball.svg)](https://www.guardrails.io)
+
 Some tries with the AmigaBall
 
 3d Canvas
